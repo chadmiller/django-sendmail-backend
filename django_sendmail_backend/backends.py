@@ -4,6 +4,7 @@ Sendmail email backend class.
 Credits: https://djangosnippets.org/snippets/1864/
 """
 from django.core.mail.backends.base import BaseEmailBackend
+from os.path import exists
 from subprocess import Popen, PIPE
 
 
@@ -29,9 +30,12 @@ class EmailBackend(BaseEmailBackend):
         recipients = email_message.recipients()
         if not recipients:
             return False
+        found = [p for p in ['/usr/sbin/', '/usr/bin/', '/usr/local/sbin/'] if exists(p+'sendmail')]
+        if not found:
+            raise Exception('sendmail not found')
         try:
             # -t: Read message for recipients
-            ps = Popen(['/usr/sbin/sendmail'] + recipients, stdin=PIPE, stderr=PIPE)
+            ps = Popen([found[0] + 'sendmail'] + recipients, stdin=PIPE, stderr=PIPE)
             ps.stdin.write(email_message.message().as_bytes())
             (stdout, stderr) = ps.communicate()
         except:
